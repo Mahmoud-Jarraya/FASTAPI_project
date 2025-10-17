@@ -33,7 +33,7 @@ class UserBase():
 class UserResponse(BaseModel):
     id: int
     email: EmailStr
-    create_at: datetime
+    created_at : datetime
     class Config:
         orm_mode = True  # tells Pydantic to read data from SQLAlchemy objects
 
@@ -43,4 +43,9 @@ class UserCreate(BaseModel):
     password: str 
 
 class UserUpdate(BaseModel):
-    pass
+    email: Optional[EmailStr] = None
+    password: Optional[str] = None
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str

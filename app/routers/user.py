@@ -54,26 +54,25 @@ def delete_user(id: int, db: Session = Depends(get_db)):
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 @router.put("/{id}", response_model=UserResponse)
-def update_post(id: int, user: UserUpdate, db: Session = Depends(get_db)):
+def update_user(id: int, user: UserUpdate, db: Session = Depends(get_db)):
     user_query = db.query(User).filter(User.id == id)
     user_to_update = user_query.first()
 
     if user_to_update is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Post with id: {id} was not found"
+            detail=f"User with id: {id} was not found"
         )
 
     update_data = user.dict(exclude_unset=True)
 
-    if not update_data:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="No fields provided for update"
-        )
+    # Hash new password if provided
+    if "password" in update_data:
+        update_data["password"] = hash(update_data["password"])
 
     user_query.update(update_data, synchronize_session=False)
     db.commit()
     db.refresh(user_to_update)
     return user_to_update
+
 
