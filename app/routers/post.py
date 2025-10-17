@@ -9,7 +9,8 @@ from app.utils import hash
 
 
 router = APIRouter(
-    prefix="/posts"
+    prefix="/posts",
+    tags=["Posts"]
 )
 
 @router.get("/", response_model=list[PostResponse]) 

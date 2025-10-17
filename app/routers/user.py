@@ -9,7 +9,9 @@ from app.utils import hash
 
 
 router = APIRouter(
-    prefix="/users"
+    prefix="/users",
+    tags=["Users"]
+
 )
 
 # Users routes
