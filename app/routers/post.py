@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Depends, APIRouter
 from sqlalchemy.orm import Session
-from app import models
+from app import models, oauth2
 from app.database import engine, get_db
 from fastapi import FastAPI, Response, status, HTTPException, Depends
 from app.schemas import  PostCreate, PostUpdate, PostResponse, UserResponse, UserCreate, UserUpdate
@@ -27,7 +27,11 @@ def get_post(id: int, db: Session = Depends(get_db)):
     return post
     
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=PostResponse)
-def create_post(post: PostCreate, db: Session = Depends(get_db)): 
+def create_post(post: PostCreate, 
+                db: Session = Depends(get_db), 
+                curremt_user =  Depends(oauth2.get_current_user)): 
+    
+    print(curremt_user.email)
     new_post = Post(**post.dict()) # unpacking
     db.add(new_post)
     db.commit()
@@ -35,7 +39,7 @@ def create_post(post: PostCreate, db: Session = Depends(get_db)):
     return new_post
 
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_post(id: int, db: Session = Depends(get_db)):
+def delete_post(id: int, db: Session = Depends(get_db), curremt_user =  Depends(oauth2.get_current_user)):
     post_query = db.query(Post).filter(Post.id == id)
     post = post_query.first()
 
@@ -50,7 +54,9 @@ def delete_post(id: int, db: Session = Depends(get_db)):
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 @router.put("/{id}", response_model=PostResponse)
-def update_post(id: int, post: PostUpdate, db: Session = Depends(get_db)):
+def update_post(id: int, post: PostUpdate, 
+                db: Session = Depends(get_db), 
+                curremt_user =  Depends(oauth2.get_current_user)):
     post_query = db.query(Post).filter(Post.id == id)
     post_to_update = post_query.first()
 
