@@ -14,32 +14,34 @@ router = APIRouter(
 )
 
 @router.get("/", response_model=list[PostResponse]) 
-def get_posts(db: Session = Depends(get_db)):
-    return db.query(Post).all()
+def get_posts(db: Session = Depends(get_db), current_user =  Depends(oauth2.get_current_user)):
+    return db.query(Post).filter(Post.owner_id == current_user.id).all()
      
 
 @router.get("/{id}", response_model=PostResponse)
-def get_post(id: int, db: Session = Depends(get_db)):
+def get_post(id: int, db: Session = Depends(get_db), current_user =  Depends(oauth2.get_current_user)):
     post = db.query(Post).filter(Post.id == id).first()
     if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=f"post with id: {id} was not found")
+    if post.owner_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
+                            detail="Not authorized to perform requested action")
     return post
     
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=PostResponse)
 def create_post(post: PostCreate, 
                 db: Session = Depends(get_db), 
-                curremt_user =  Depends(oauth2.get_current_user)): 
+                current_user =  Depends(oauth2.get_current_user)): 
     
-    print(curremt_user.email)
-    new_post = Post(**post.dict()) # unpacking
+    new_post = Post(owner_id=current_user.id,**post.dict()) # unpacking
     db.add(new_post)
     db.commit()
     db.refresh(new_post)
     return new_post
 
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_post(id: int, db: Session = Depends(get_db), curremt_user =  Depends(oauth2.get_current_user)):
+def delete_post(id: int, db: Session = Depends(get_db), current_user =  Depends(oauth2.get_current_user)):
     post_query = db.query(Post).filter(Post.id == id)
     post = post_query.first()
 
@@ -48,7 +50,20 @@ def delete_post(id: int, db: Session = Depends(get_db), curremt_user =  Depends(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Post with id {id} was not found"
         )
+    print("//////////////////////////////////////")
+    print("//////////////////////////////////////")
+    print("//////////////////////////////////////")
 
+    print(post.owner_id)
+    print(current_user.id)
+    print("//////////////////////////////////////")
+    print("//////////////////////////////////////")
+    print("//////////////////////////////////////")
+
+
+    if post.owner_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
+                            detail="Not authorized to perform requested action")
     post_query.delete(synchronize_session=False)
     db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -56,7 +71,7 @@ def delete_post(id: int, db: Session = Depends(get_db), curremt_user =  Depends(
 @router.put("/{id}", response_model=PostResponse)
 def update_post(id: int, post: PostUpdate, 
                 db: Session = Depends(get_db), 
-                curremt_user =  Depends(oauth2.get_current_user)):
+                current_user =  Depends(oauth2.get_current_user)):
     post_query = db.query(Post).filter(Post.id == id)
     post_to_update = post_query.first()
 
@@ -67,7 +82,10 @@ def update_post(id: int, post: PostUpdate,
         )
 
     update_data = post.dict(exclude_unset=True)
-
+    
+    if post_to_update.owner_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
+                            detail="Not authorized to perform requested action")
     if not update_data:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
