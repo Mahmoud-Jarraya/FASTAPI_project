@@ -6,6 +6,8 @@ from fastapi import FastAPI, Response, status, HTTPException, Depends
 from app.schemas import  PostCreate, PostUpdate, PostResponse, UserResponse, UserCreate, UserUpdate
 from app.models import Post, User
 from app.utils import hash
+from typing import Optional
+
 
 
 router = APIRouter(
@@ -14,8 +16,13 @@ router = APIRouter(
 )
 
 @router.get("/", response_model=list[PostResponse]) 
-def get_posts(db: Session = Depends(get_db), current_user =  Depends(oauth2.get_current_user)):
-    return db.query(Post).filter(Post.owner_id == current_user.id).all()
+def get_posts(
+            db: Session = Depends(get_db), 
+            current_user =  Depends(oauth2.get_current_user),
+            limit : int =10,
+            skip :int = 0,
+            search : Optional[str] = ""):
+    return db.query(Post).filter((Post.owner_id == current_user.id)&(Post.title.contains(search))).limit(limit).offset(skip).all()
      
 
 @router.get("/{id}", response_model=PostResponse)
